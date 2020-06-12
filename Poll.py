@@ -1,7 +1,7 @@
-from Chart import *
+from Chart import chart
 
 
-class Poll:
+class poll:
     """ What Poll Does
 
         Poll helps keep individual poll data separate by giving each an ID
@@ -19,7 +19,7 @@ class Poll:
     visual of the results
     """
     def get_graph(self):
-        return Chart(self)
+        return chart(self)
 
     def __init__(self, poll_id: int):
         self.id = poll_id

@@ -1,8 +1,8 @@
-from Poll import *
+from Poll import poll
 import plotly.express as px
 
 
-class Chart:
+class chart:
     """ What Chart Does
 
     Chart is a class that takes in a poll object and creates a pie chart
@@ -18,5 +18,5 @@ class Chart:
         #  poll and return it
         pass
 
-    def __init__(self, poll: Poll):
+    def __init__(self, poll: poll):
         self.poll = poll
