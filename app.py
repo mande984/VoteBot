@@ -1,8 +1,11 @@
 import os
 import logging
 import re
-from flask import Flask
-from flask import request
+import uuid
+import json
+from Message import MessageType
+from Message import error_message
+from flask import Flask, request
 from slack import WebClient
 from slackeventsapi import SlackEventAdapter
 from Poll import poll
@@ -22,27 +25,12 @@ app = Flask(__name__)
 slack_events_adapter = SlackEventAdapter(os.environ["SLACK_SIGNING_SECRET"],
                                          "/slack/events", app)
 
-# Initialize a Web API client
-slack_web_client = WebClient(token=os.environ['SLACK_BOT_TOKEN'])
+slack_web_client = WebClient(
+    token=os.environ['SLACK_BOT_TOKEN'])  # Initialize a Web API client
 
-# current_polls contains the polls that are running
-current_polls: List[poll] = []
+current_polls: List[poll] = []  # current_polls contains all running polls
 
-# The id number for the last poll added
-_poll_id: int
-
-
-@staticmethod
-def get_poll_id(poll_id=_poll_id):
-    """
-    get_poll_id is a static method that increases the current _poll_id and
-    returns the next id as an int so a new poll can be created
-
-    Returns:
-        poll_id (int): an empty poll id for the next poll to use
-    """
-    # TODO: Replace all usage of incremental id's with uuid
-    return poll_id + 1
+poll_id: uuid  # The id number for the last poll added
 
 
 @slack_events_adapter.on("reaction_added")
@@ -61,34 +49,61 @@ def reaction_removed(event_data):
 
 @app.route("/vote", methods=['POST'])
 def poll_request(event_data):
+    """
+    poll_request works on the user's command "/vote [title] [poll options]"
+    and based on the data creates a new poll and starts tracking the voting.
+
+    Parameters:
+        event_data: the json payload of data sent from slack triggered by a
+        user performing the /vote command
+    """
     # When someone sends a /vote command, the text header should contains
     # data in the form "[title] [poll options w/ commas between]"
+    error_message(event_data)
+    '''
     poll_command_text = re.split(',', event_data["text"])
     if not 3 < len(poll_command_text) < 6:
-        # TODO: Create JSON error message for incorrect input
-        pass
-    new_poll_id = get_poll_id()
-    new_poll = poll(new_poll_id, poll_command_text)
+        error_handler(event_data)
+    new_poll = poll(uuid.uuid4(), poll_command_text)
     current_polls.append(new_poll)
     # TODO: Create JSON message with the poll, and send the poll id to the
     #  user so they can end the poll
+    '''
+    pass
 
 
 @app.route("/endvote", methods=['POST'])
 def end_poll(event_data):
+    """
+    end_poll works on the user's command "/endvote [poll id]" and uses the
+    poll id to find the poll and go through the process of stopping voting,
+    creating the final graph, and sending to the user the finished results of
+    the voting.
+
+    Parameters:
+        event_data: the json payload of data sent from slack triggered by a
+        user performing the /endvote command
+    """
     # To end a poll, the person who started it can use the poll id to end it
     # with the format "/endvote [poll id]". The chart should be created and
     # output in another message to the chat.
-    # TODO: Parse input to make sure the poll id is correct
-    # TODO: Create the chart of the poll, send it in a JSON message,
-    #  then remove the poll from current_polls
+    poll_command_text = re.split('', event_data["text"])
+    for p in current_polls:
+        if poll_command_text[0] == p.id:
+            # TODO: Create the chart of the poll, send it in a JSON message,
+            #  then remove the poll from current_polls
+            pass
     pass
 
 
 @slack_events_adapter.on("error")
-def error_handler(error):
-    # TODO: Create a JSON error message
-    pass
+def error_handler(payload):
+    """
+    error_handler will take in a payload message describing what went wrong
+    and send it to the user on slack
+    """
+    message = error_message(payload)
+    slack_web_client.api_call("chat.postMessage", message)
 
 
 if __name__ == "__main__":

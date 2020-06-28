@@ -1,5 +1,4 @@
-from Poll import poll
-import plotly.express as px
+import Poll
 
 
 class chart:
@@ -17,6 +16,3 @@ class chart:
         # TODO: Create a graph using plotly based on the data of a finished
         #  poll and return it
         pass
-
-    def __init__(self, poll: poll):
-        self.poll = poll
